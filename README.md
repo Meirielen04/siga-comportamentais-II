@@ -51,6 +51,40 @@ Siga as etapas da ficha de atividade prática:
 4. **Criar o State.** Escreva a interface `EstadoMatricula` e as quatro classes `PreMatriculada`, `Confirmada`, `Trancada` e `Cancelada`, com as transições **dentro** delas. Os três métodos públicos de `Matricula` devem ficar com uma linha cada, sem nenhum `if`.
 5. **Medir o ganho.** Acrescente o estado `Concluida`, alcançável a partir de `Confirmada`, e registre neste README **quantos arquivos você precisou tocar** — comparando com os três métodos que seriam alterados na versão inicial.
 
+## Etapa 1 - Localizar a inversão
+
+### Rito duplicado
+- Os 5 passos são validar, cabeçalho, corpo, rodapé e registrar.
+- Quatro dos cinco passos são iguais nas três classes; só o `corpo` varia de um documento para outro.
+- Há duas exceções escondidas no código copiado: no `rodape`, o `AtestadoFrequencia.java` não tem a linha de assinatura; e o `registrar`, apesar de ser igual, está no lugar errado na `DeclaracaoVinculo.java`.
+
+### O ponto exato da inversão
+- Arquivo: `src/siga/DeclaracaoVinculo.java`, linha 13.
+- Código onde ocorre:
+```java
+public String emitir(Aluno aluno) {
+    LogAcademico.registrar("DECLARACAO", aluno);   // fora de ordem
+```
+- O registro no log é a primeira instrução do método e vem antes da validação (linhas 15–18). No `HistoricoEscolar` e no `AtestadoFrequencia`, o registro é o último passo, logo antes do `return`.
+
+### A consequência observável
+- Saída do programa:
+```
+2) A declaracao de vinculo, com os passos fora de ordem
+   Emitindo para um aluno IRREGULAR:
+   [log] DECLARACAO emitido para 2024002
+   [erro] Aluno irregular: 2024002
+   >> DESLIZE 2: repare na linha de log acima do erro.
+      O documento nao foi emitido, mas ja consta no log.
+      Registros no log: [HISTORICO - 2024001, ATESTADO - 2024001, DECLARACAO - 2024002]
+```
+- A linha `[log] DECLARACAO...` aparece antes da linha `[erro] Aluno`. 
+- Na lista final do log aparece `DECLARACAO - 2024002`, um documento que nunca foi emitido.
+
+### Por que isso aconteceu
+Cada classe tem sua própria cópia do rito, e falta um lugar único que diga qual é a ordem dos passos. Como são cópias, elas podem ficar diferentes: nada impede que alguém troque a ordem em uma delas, e foi o que aconteceu na `DeclaracaoVinculo`. O ideal é usar o Template Method, para que a ordem dos passos fique em um único método da classe-mãe. Como esse método é `final`, nenhuma subclasse pode alterá-lo, e cada documento só preenche o corpo.
+
+
 ## Critério de sucesso
 
 Ao final, verifique que: (a) o texto do cabeçalho e o do rodapé existem em **um único lugar**; (b) o método-template é `final`, de modo que nenhuma subclasse consiga inverter a ordem; (c) emitir qualquer documento para um aluno irregular **não deixa rastro no log**; (d) a palavra `if` não aparece em nenhum dos três métodos públicos de `Matricula`; e (e) acrescentar o estado `Concluida` custou **dois arquivos** — a classe nova e a `Confirmada`, que passa a oferecer a transição.
