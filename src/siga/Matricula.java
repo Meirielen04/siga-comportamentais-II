@@ -22,8 +22,13 @@ public class Matricula {
     public void cancelar() {
         estado.cancelar(this);
     }
+
     public void trancar() {
         estado.trancar(this);
+    }
+
+    public void concluir() {
+        estado.concluir(this);
     }
 
     public Aluno getAluno() {

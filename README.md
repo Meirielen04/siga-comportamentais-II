@@ -1,8 +1,8 @@
-# SIGA — Atividade de padrões comportamentais II: Template Method e State (código inicial)
+# SIGA — Atividade de padrões comportamentais II: Template Method e State
 
 **Técnicas de Programação II (TP2) · Aula 13** — CST em Desenvolvimento de Software Multiplataforma · Fatec de Porto Ferreira
 
-Este é o **código inicial** da atividade prática da Aula 13, a última com padrões de projeto. Ele compila e executa — e a saída já mostra um aluno irregular deixando rastro no log de um documento que nunca foi emitido. São **três deslizes**, e os dois padrões da aula resolvem todos eles.
+Este é o **código final** da atividade prática da Aula 13. O código inicial compilava e executava, mas a saída mostrava um aluno irregular deixando rastro no log de um documento que nunca foi emitido. Eram **três deslizes**: o **Template Method** resolveu os dois primeiros, reunindo o rito de emissão dos documentos em um único método, e o **State** resolveu o terceiro, tirando o ciclo de vida da matrícula das condicionais.
 
 ## Estrutura do projeto
 
@@ -10,13 +10,25 @@ Este é o **código inicial** da atividade prática da Aula 13, a última com pa
 siga-comportamentais-ii/
 └── src/
     └── siga/
-        ├── Aluno.java                (entidade de domínio; pronta)
-        ├── LogAcademico.java         (registro de emissões; pronto)
-        ├── HistoricoEscolar.java     (rito duplicado — deslize 1)
-        ├── DeclaracaoVinculo.java    (rito duplicado E fora de ordem — deslizes 1 e 2)
-        ├── AtestadoFrequencia.java   (rito duplicado — deslize 1)
-        ├── Matricula.java            (ciclo de vida em condicionais — deslize 3)
-        └── Main.java                 (demonstra os três deslizes)
+        ├── Aluno.java                (entidade de domínio; não foi alterada)
+        ├── LogAcademico.java         (registro de emissões; não foi alterado)
+        │
+        │   Template Method — emissão de documentos
+        ├── DocumentoAcademico.java   (classe abstrata: método-template final emitir e passos fixos)
+        ├── HistoricoEscolar.java     (implementa corpo e tipo)
+        ├── DeclaracaoVinculo.java    (implementa corpo e tipo)
+        ├── AtestadoFrequencia.java   (corpo, tipo e o gancho exigeAssinatura = false)
+        │
+        │   State — ciclo de vida da matrícula
+        ├── Matricula.java            (repassa cada ação ao estado atual, sem if)
+        ├── EstadoMatricula.java      (interface dos estados; concluir é um método default)
+        ├── PreMatriculada.java       (estado inicial)
+        ├── Confirmada.java           (leva a Trancada, Cancelada ou Concluida)
+        ├── Trancada.java             (volta a Confirmada ou vai a Cancelada)
+        ├── Cancelada.java            (estado final)
+        ├── Concluida.java            (estado final; criado na etapa 5)
+        │
+        └── Main.java                 (demonstra os dois padrões funcionando)
 ```
 
 ## Como compilar e executar
@@ -31,34 +43,72 @@ javac -encoding UTF-8 -d bin src/siga/*.java
 java -cp bin siga.Main
 ```
 
-Execute antes de ler o restante deste arquivo: a saída **mostra os três deslizes acontecendo**.
+Saída obtida com o código final:
 
-## Os três deslizes propositais
+```
+=== SIGA - Aula 13: Template Method e State ===
 
-| # | Deslize | Onde | Por que é um problema |
-|---|---|---|---|
-| 1 | **O rito de emissão duplicado** | As três classes de documento | Cinco passos — validar, cabeçalho, corpo, rodapé, registrar — e **quatro deles são idênticos** nas três classes. Só o corpo varia. Um quarto documento seria uma quarta cópia. |
-| 2 | **Os passos fora de ordem** | `DeclaracaoVinculo` | Alguém inverteu: o **registro no log acontece antes da validação**. Execute com um aluno irregular e veja — o documento não é emitido, mas já consta no log. A ordem dos passos é uma regra, e regra copiada diverge. |
-| 3 | **O ciclo de vida em condicionais sobre uma String** | `Matricula` | As regras de transição estão espalhadas por três métodos, e não se lê o ciclo de vida inteiro em lugar nenhum. O estado "concluída" exigiria alterar os três. E, sendo a situação um texto, um erro de digitação só apareceria em produção. |
+1) Tres documentos, um unico rito (Template Method)
+   [log] HISTORICO emitido para 2024001
+     FATEC DE PORTO FERREIRA
+     Sistema de Gestao Academica
+     ---
+     HISTORICO ESCOLAR
+     Maria Silva
+     Carga horaria cumprida: 560h
+     ---
+     Emitido em 2026-11-17
+     Assinado digitalmente pela secretaria academica.
+   [log] ATESTADO emitido para 2024001
+     FATEC DE PORTO FERREIRA
+     Sistema de Gestao Academica
+     ---
+     ATESTADO DE FREQUENCIA
+     Maria Silva
+     ---
+     Emitido em 2026-11-17
+   >> Os quatro passos comuns ficam na DocumentoAcademico;
+      cada classe so define o corpo
 
-## Sua tarefa
+2) A declaracao de vinculo para um aluno irregular
+   Emitindo para um aluno IRREGULAR:
+   [erro] Aluno irregular: 2024002
+   >> O documento nao foi emitido e nao consta no log.
+      Registros no log: [HISTORICO - 2024001, ATESTADO - 2024001]
 
-Siga as etapas da ficha de atividade prática:
+3) O ciclo de vida da matricula com o padrao State
+   situacao inicial: PRE_MATRICULADA
+   apos confirmar:   CONFIRMADA
+   apos trancar:     TRANCADA
+   apos confirmar:   CONFIRMADA
+   apos cancelar:    CANCELADA
+   [erro] Nao e possivel confirmar uma matricula CANCELADA
+   >> Cada estado conhece suas transicoes;
+      a matricula so repassa a chamada
 
-1. **Localizar a inversão.** Identifique, nas três classes de documento, o rito duplicado, e aponte neste README o ponto exato em que a `DeclaracaoVinculo` está fora de ordem e qual é a consequência observável.
-2. **Criar o esqueleto.** Escreva a classe abstrata `DocumentoAcademico` com o método-template `emitir(Aluno)` declarado **`final`**, os passos invariantes (`validar`, `cabecalho`, `rodape`, `registrarEmissao`) implementados nela, e `corpo(Aluno)` como passo abstrato.
-3. **Converter os documentos.** Faça as três classes estenderem `DocumentoAcademico`, implementando apenas o `corpo`. Use um **gancho** `exigeAssinatura()`, com padrão `true`, que o `AtestadoFrequencia` sobrescreve para `false`.
-4. **Criar o State.** Escreva a interface `EstadoMatricula` e as quatro classes `PreMatriculada`, `Confirmada`, `Trancada` e `Cancelada`, com as transições **dentro** delas. Os três métodos públicos de `Matricula` devem ficar com uma linha cada, sem nenhum `if`.
-5. **Medir o ganho.** Acrescente o estado `Concluida`, alcançável a partir de `Confirmada`, e registre neste README **quantos arquivos você precisou tocar** — comparando com os três métodos que seriam alterados na versão inicial.
+4) O estado novo: Concluida
+   situacao inicial: PRE_MATRICULADA
+   apos confirmar:   CONFIRMADA
+   apos concluir:    CONCLUIDA
+   [erro] Nao e possivel cancelar uma matricula CONCLUIDA
+```
 
-## Etapa 1 - Localizar a inversão
+## Os três deslizes que existiam no código inicial
 
-### Rito duplicado
+| # | Deslize | Onde estava | Por que era um problema | Como foi resolvido |
+|---|---|---|---|---|
+| 1 | **O rito de emissão duplicado** | `HistoricoEscolar`, `DeclaracaoVinculo` e `AtestadoFrequencia` | Cinco passos — validar, cabeçalho, corpo, rodapé, registrar — e **quatro deles eram idênticos** nas três classes. Só o corpo variava, e um quarto documento seria uma quarta cópia. | **Template Method**: os passos fixos foram para `DocumentoAcademico`, e cada documento implementa apenas `corpo` e `tipo`. A falta de assinatura do atestado virou o gancho `exigeAssinatura()`. |
+| 2 | **Os passos fora de ordem** | `DeclaracaoVinculo.emitir` | O **registro no log acontecia antes da validação**: um aluno irregular deixava no log um documento que nunca foi emitido. | **Template Method**: a ordem dos passos fica no método `emitir`, que é `final`, então nenhuma subclasse consegue invertê-la. |
+| 3 | **O ciclo de vida em condicionais sobre uma String** | `Matricula.confirmar`, `trancar` e `cancelar` | As regras de transição estavam espalhadas por três métodos, e um erro de digitação na situação só apareceria com o programa rodando. | **State**: cada situação virou uma classe que implementa `EstadoMatricula` e decide as próprias transições; a `Matricula` só repassa a ação ao estado atual. |
+
+### Etapa 1 — Localização da inversão
+
+#### Rito duplicado
 - Os 5 passos são validar, cabeçalho, corpo, rodapé e registrar.
 - Quatro dos cinco passos são iguais nas três classes; só o `corpo` varia de um documento para outro.
 - Há duas exceções escondidas no código copiado: no `rodape`, o `AtestadoFrequencia.java` não tem a linha de assinatura; e o `registrar`, apesar de ser igual, está no lugar errado na `DeclaracaoVinculo.java`.
 
-### O ponto exato da inversão
+#### O ponto exato da inversão
 - Arquivo: `src/siga/DeclaracaoVinculo.java`, linha 13.
 - Código onde ocorre:
 ```java
@@ -67,7 +117,7 @@ public String emitir(Aluno aluno) {
 ```
 - O registro no log é a primeira instrução do método e vem antes da validação (linhas 15–18). No `HistoricoEscolar` e no `AtestadoFrequencia`, o registro é o último passo, logo antes do `return`.
 
-### A consequência observável
+#### A consequência observável
 - Saída do programa:
 ```
 2) A declaracao de vinculo, com os passos fora de ordem
@@ -81,28 +131,26 @@ public String emitir(Aluno aluno) {
 - A linha `[log] DECLARACAO...` aparece antes da linha `[erro] Aluno`. 
 - Na lista final do log aparece `DECLARACAO - 2024002`, um documento que nunca foi emitido.
 
-### Por que isso aconteceu
+#### Por que isso aconteceu
 Cada classe tem sua própria cópia do rito, e falta um lugar único que diga qual é a ordem dos passos. Como são cópias, elas podem ficar diferentes: nada impede que alguém troque a ordem em uma delas, e foi o que aconteceu na `DeclaracaoVinculo`. O ideal é usar o Template Method, para que a ordem dos passos fique em um único método da classe-mãe. Como esse método é `final`, nenhuma subclasse pode alterá-lo, e cada documento só preenche o corpo.
 
+### Etapa 5 - Medição do ganho
+
+O estado `Concluida`, alcançável somente a partir de `Confirmada` pela nova ação `concluir()`, custou **4 arquivos**, além da `Main`, que só ganhou a demonstração:
+
+| Arquivo | O que mudou |
+|---|---|
+| `Concluida.java` | arquivo novo, com as regras do estado |
+| `Confirmada.java` | passa a oferecer a transição para `Concluida` |
+| `EstadoMatricula.java` | declara `concluir` como método `default`, que lança erro |
+| `Matricula.java` | ganha `concluir()`, com uma linha e sem `if` |
 
 ## Critério de sucesso
 
-Ao final, verifique que: (a) o texto do cabeçalho e o do rodapé existem em **um único lugar**; (b) o método-template é `final`, de modo que nenhuma subclasse consiga inverter a ordem; (c) emitir qualquer documento para um aluno irregular **não deixa rastro no log**; (d) a palavra `if` não aparece em nenhum dos três métodos públicos de `Matricula`; e (e) acrescentar o estado `Concluida` custou **dois arquivos** — a classe nova e a `Confirmada`, que passa a oferecer a transição.
+Ao final, verificou-se que:
 
-> O item (c) é o teste que prova o Template Method. Se a `DeclaracaoVinculo` ainda registrar antes de validar depois da refatoração, é porque o método-template não ficou `final` — ou porque a subclasse o sobrescreveu em vez de preencher o `corpo`.
-
-## A linha que você deve conseguir apontar
-
-No final da etapa 4, uma das suas classes de estado conterá algo como:
-
-```java
-matricula.mudarPara(new Confirmada());
-```
-
-Essa é a linha que distingue o **State** do **Strategy** da aula passada. Uma política de desconto calcula e devolve um valor; ela jamais diria `matricula.setPolitica(new DescontoServidor())`. No State, os estados se conhecem e executam as transições. Se você conseguir explicar isso no README, entendeu o padrão.
-
-## Padrão de entrega
-
-Conforme a ficha de atividade prática: identificadores em português, um arquivo `.java` por classe pública, código formatado, entrega no repositório Git com README e commits descritivos. O uso de IA para gerar o código é proibido nesta atividade (ver seção 5.3 da ficha).
-
-> **Projeto Integrador — Etapa 2:** a entrega é **hoje**. Ela exige ao menos um padrão estrutural (Aulas 10 e 11) e ao menos um comportamental (Aulas 12 e 13), cada um com justificativa que descreva **o problema do SIGA antes de nomear o padrão**. O critério que mais pesa é a pertinência: dois padrões bem justificados valem mais que seis decorativos.
+- (a) o texto do cabeçalho e o do rodapé existem em **um único lugar**, a `DocumentoAcademico`;
+- (b) o método-template `emitir` é **`final`**, então nenhuma subclasse consegue inverter a ordem dos passos;
+- (c) emitir um documento para um aluno irregular **não deixa rastro no log**, como mostra a seção 2 da saída acima;
+- (d) a palavra `if` não aparece em nenhum dos métodos públicos de `Matricula`;
+- (e) as regras do estado `Concluida` ficaram em **dois arquivos**, a classe nova e a `Confirmada`; os outros dois arquivos alterados só declaram a nova ação `concluir`.

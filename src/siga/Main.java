@@ -1,9 +1,5 @@
 package siga;
 
-/**
- * Demonstra os três deslizes acontecendo. Execute e observe a saída:
- * é dela que partem as etapas da ficha de atividade prática.
- */
 public class Main {
 
     public static void main(String[] args) {
@@ -16,9 +12,10 @@ public class Main {
         irregular.setRegular(false);
 
         System.out.println();
+        System.out.println("1) Tres documentos, um unico rito (Template Method)");
         System.out.println(recuar(new HistoricoEscolar().emitir(regular)));
         System.out.println(recuar(new AtestadoFrequencia().emitir(regular)));
-        System.out.println("   >> Os quatro passos comum ficam na DocumentoAcademico;");
+        System.out.println("   >> Os quatro passos comuns ficam na DocumentoAcademico;");
         System.out.println("      cada classe so define o corpo");
 
         System.out.println();
@@ -29,7 +26,7 @@ public class Main {
         } catch (IllegalStateException e) {
             System.out.println("   [erro] " + e.getMessage());
         }
-        System.out.println("      O documento nao foi emitido, mas ja consta no log.");
+        System.out.println("   >> O documento nao foi emitido e nao consta no log.");
         System.out.println("      Registros no log: " + LogAcademico.getRegistros());
 
         System.out.println();
@@ -53,7 +50,18 @@ public class Main {
         System.out.println("      a matricula so repassa a chamada");
 
         System.out.println();
-        System.out.println("Sua tarefa: ver o README.md e a ficha de atividade pratica.");
+        System.out.println("4) O estado novo: Concluida");
+        Matricula m2 = new Matricula(regular, "DSM-2A");
+        System.out.println("   situacao inicial: " + m2.getSituacao());
+        m2.confirmar();
+        System.out.println("   apos confirmar:   " + m2.getSituacao());
+        m2.concluir();
+        System.out.println("   apos concluir:    " + m2.getSituacao());
+        try {
+            m2.cancelar();
+        } catch (IllegalStateException e) {
+            System.out.println("   [erro] " + e.getMessage());
+        }
     }
 
     private static String recuar(String texto) {
