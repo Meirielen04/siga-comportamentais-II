@@ -33,7 +33,7 @@ public class Main {
         System.out.println("      Registros no log: " + LogAcademico.getRegistros());
 
         System.out.println();
-        System.out.println("3) O ciclo de vida da matricula em condicionais");
+        System.out.println("3) O ciclo de vida da matricula com o padrao State");
         Matricula m = new Matricula(regular, "DSM-2A");
         System.out.println("   situacao inicial: " + m.getSituacao());
         m.confirmar();
@@ -49,9 +49,8 @@ public class Main {
         } catch (IllegalStateException e) {
             System.out.println("   [erro] " + e.getMessage());
         }
-        System.out.println("   >> DESLIZE 3: as regras de transicao estao espalhadas por");
-        System.out.println("      tres metodos. Acrescentar o estado CONCLUIDA exige");
-        System.out.println("      alterar os tres. E a situacao e uma String.");
+        System.out.println("   >> Cada estado conhece suas transicoes;");
+        System.out.println("      a matricula so repassa a chamada");
 
         System.out.println();
         System.out.println("Sua tarefa: ver o README.md e a ficha de atividade pratica.");
